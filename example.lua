@@ -1,30 +1,84 @@
--- main script using RoundUI
+-- RoundUI Example
+-- URL of lib (lol): https://github.com/Info-kun-git/RoundUI/blob/main/source.lua?raw=true
+
 local rui = loadstring(game:HttpGet("https://github.com/Info-kun-git/RoundUI/blob/main/source.lua?raw=true"))()
 
 local ui = rui.new({
-    Name = "Super Ring Parts v4",
-    Color = Color3.fromRGB(204, 0, 0),
-    Size = UDim2.new(0, 220, 0, 190)
+    Name = "RoundUI Example",
+    Color = Color3.fromRGB(102, 204, 153),
+    Size = UDim2.new(0, 300, 0, 350)
 })
 
-local pg = ui:createPage("Main")
-local sec = pg:createSection("Controls")
+local mainPage = ui:createPage("Main Controls")
 
-local toggleBtn = sec:createButton({
-    Name = "Ring Parts Off",
+local controlsSec = mainPage:createSection("Controls")
+
+local button = controlsSec:createButton({
+    Name = "Test Button",
     Callback = function()
-        print("Yo")
+        print("Button clicked!")
     end
 })
 
-local radiusSlider = sec:createSlider({
-    Name = "Radius",
-    Min = 1,
-    Max = 1000,
+local toggleState = false
+local toggle = controlsSec:createToggle({
+    Name = "Enable Feature",
+    Default = false,
+    Callback = function(state)
+        toggleState = state
+        if state then
+            print("Toggle enabled!")
+        else
+            print("Toggle disabled!")
+        end
+    end
+})
+
+local sliderValue = 50
+local slider = controlsSec:createSlider({
+    Name = "Volume",
+    Min = 0,
+    Max = 100,
     Default = 50,
-    Callback = function(val)
-        -- ваш код radius
+    Callback = function(value)
+        sliderValue = value
+        print("Slider value:", value)
     end
 })
 
--- и так далее для остальных элементов
+controlsSec:createLabel("Welcome to RoundUI!")
+controlsSec:createLabel("Drag the top bar to move")
+
+local statusSec = mainPage:createSection("Status")
+
+local statusLabel = statusSec:createLabel("Ready")
+
+local updateBtn = statusSec:createButton({
+    Name = "Update Status",
+    Callback = function()
+        statusLabel:set("Updated at: " .. os.date("%X"))
+        print("Status updated!")
+    end
+})
+
+local toggleSec = mainPage:createSection("More Toggles")
+
+local toggle2 = toggleSec:createToggle({
+    Name = "Option A",
+    Default = true,
+    Callback = function(state)
+        print("Option A:", state)
+    end
+})
+
+local toggle3 = toggleSec:createToggle({
+    Name = "Option B",
+    Default = false,
+    Callback = function(state)
+        print("Option B:", state)
+    end
+})
+
+print("RoundUI Example loaded successfully!")
+print("UI is draggable - click and drag the top bar")
+print("Use +/- button to minimize/expand")
