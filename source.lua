@@ -1,14 +1,16 @@
--- RoundUI Library v1.2 (Fixed & Enhanced)
--- clean, minimal, auto-scaling, drag-fixed
+-- RoundUI Library v1.3
+-- Auto-scale, Safe Appear (Hidden), Textbox added
 
 local rs = game:GetService("RunService")
 local ts = game:GetService("TweenService")
 local uis = game:GetService("UserInputService")
 local core = game:GetService("CoreGui")
 local plrs = game:GetService("Players")
+local http = game:GetService("HttpService") -- Для генерации случайных имен
 
 local lp = plrs.LocalPlayer
 local mouse = lp:GetMouse()
+local camera = workspace.CurrentCamera
 
 local rui = {}
 local page = {}
@@ -21,12 +23,28 @@ section.__index = section
 elem.__index = elem
 
 -- Настройки темы
-local THEME_FONT = Enum.Font.GothamBold -- Самый близкий и стабильный аналог Montserrat Bold
-local PADDING_SIZE = 6 -- Отступ между элементами
+local THEME_FONT = Enum.Font.GothamBold 
+local PADDING_SIZE = 6
 
 local utils = {}
 
 do
+    -- Функция для защиты GUI (Safe Appear)
+    function utils:secureParent(gui)
+        -- 1. Генерируем случайное имя, чтобы игра не нашла GUI по названию
+        gui.Name = http:GenerateGUID(false)
+        
+        -- 2. Пытаемся использовать защищенную папку (gethui), если её нет - CoreGui
+        if (getgenv and getgenv().gethui) then
+            gui.Parent = getgenv().gethui()
+        elseif (syn and syn.protect_gui) then 
+            syn.protect_gui(gui)
+            gui.Parent = core
+        else
+            gui.Parent = core
+        end
+    end
+
     function utils:createBtn(obj)
         local btn = Instance.new("TextButton")
         btn.Font = THEME_FONT
@@ -43,11 +61,6 @@ do
         return btn
     end
 
-    function utils:lerp(a,b,t)
-        return a + (b - a) * t
-    end
-
-    -- ИСПРАВЛЕННАЯ ФУНКЦИЯ DRAG (Без ошибки Vector3)
     function utils:initDrag(frame, handle)
         handle = handle or frame
         local dragging = false
@@ -101,22 +114,26 @@ do
     function utils:clamp(v, min, max)
         return math.max(min, math.min(max, v))
     end
-
-    function utils:round(num, places)
-        local mult = 10^(places or 0)
-        return math.floor(num * mult + 0.5) / mult
-    end
 end
 
 function rui.new(info)
     local name = info.Name or "RoundUI"
     local color = info.Color or Color3.fromRGB(102, 204, 153)
-    local size = info.Size or UDim2.new(0, 350, 0, 250) -- Чуть шире по умолчанию
+    
+    -- АВТОМАТИЧЕСКИЙ РАСЧЕТ РАЗМЕРА (Optimal Size)
+    -- Берем размер экрана
+    local viewport = camera.ViewportSize
+    -- Ширина: 35% от экрана, но не меньше 350px и не больше 600px
+    local optimalWidth = math.clamp(viewport.X * 0.35, 350, 600)
+    -- Высота: 40% от экрана, но не меньше 250px и не больше 500px
+    local optimalHeight = math.clamp(viewport.Y * 0.4, 250, 500)
+    
+    local size = UDim2.new(0, optimalWidth, 0, optimalHeight)
     
     local scr = Instance.new("ScreenGui")
-    scr.Name = name
     scr.ResetOnSpawn = false
-    scr.Parent = core
+    -- ПРИМЕНЯЕМ ЗАЩИТУ (SAFE APPEAR)
+    utils:secureParent(scr)
     
     local main = Instance.new("Frame")
     main.Size = size
@@ -140,7 +157,6 @@ function rui.new(info)
     topCorner.CornerRadius = UDim.new(0, 15)
     topCorner.Parent = top
     
-    -- Исправление: чтобы углы снизу не закруглялись у верхнего бара
     local topCover = Instance.new("Frame")
     topCover.Size = UDim2.new(1, 0, 0, 10)
     topCover.Position = UDim2.new(0, 0, 1, -10)
@@ -150,7 +166,7 @@ function rui.new(info)
     
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(0.6, 0, 1, 0)
-    title.Position = UDim2.new(0, 15, 0, 0) -- Отступ слева
+    title.Position = UDim2.new(0, 15, 0, 0)
     title.Text = name
     title.TextColor3 = Color3.new(1,1,1)
     title.BackgroundTransparency = 1
@@ -199,7 +215,7 @@ function rui.new(info)
     closeCorner.Parent = closeBtn
     
     local content = Instance.new("Frame")
-    content.Size = UDim2.new(1, -10, 1, -50) -- Отступы
+    content.Size = UDim2.new(1, -10, 1, -50)
     content.Position = UDim2.new(0, 5, 0, 45)
     content.BackgroundTransparency = 1
     content.Parent = main
@@ -219,19 +235,16 @@ function rui.new(info)
     layout.SortOrder = Enum.SortOrder.LayoutOrder
     layout.Parent = scroll
     
-    -- ПРИМЕНЕНИЕ DRAG (теперь без ошибок)
     utils:initDrag(main, top)
     
     local minimized = false
     local originalSize = main.Size
-    local originalPos = main.Position
     
     minBtn.MouseButton1Click:Connect(function()
         minimized = not minimized
         if minimized then
             minBtn.Text = "+"
             utils:tween(main, {Size = UDim2.new(0, 200, 0, 40)}, 0.3)
-            -- Оставляем позицию там где была, просто уменьшаем
             content.Visible = false
         else
             minBtn.Text = "-"
@@ -255,13 +268,11 @@ end
 
 function rui:createPage(name)
     local pg = Instance.new("Frame")
-    -- АВТО-ШИРИНА: 100% ширины контейнера
     pg.Size = UDim2.new(1, 0, 0, 30) 
     pg.BackgroundColor3 = Color3.fromRGB(120, 180, 150)
-    pg.BackgroundTransparency = 1 -- Сделаем прозрачным заголовок страницы для минимализма
+    pg.BackgroundTransparency = 1
     pg.Parent = self.content
     
-    -- Только текст страницы (разделитель)
     local txt = Instance.new("TextLabel")
     txt.Size = UDim2.new(1, 0, 1, 0)
     txt.Text = "- " .. name .. " -"
@@ -279,29 +290,32 @@ function rui:createPage(name)
 end
 
 function page:createSection(name)
-    -- Секция больше не нужна как отдельный объект внутри страницы в плоском дизайне,
-    -- но мы сохраним структуру для совместимости, просто делаем авто-размер.
-    
-    -- Контейнер секции
     local sec = Instance.new("Frame")
-    sec.Size = UDim2.new(1, 0, 0, 0) -- Высота авто
+    sec.Size = UDim2.new(1, 0, 0, 0)
     sec.AutomaticSize = Enum.AutomaticSize.Y
     sec.BackgroundTransparency = 1
-    sec.Parent = self.frame.Parent -- Кидаем в скролл, а не внутрь страницы (flattened)
+    sec.Parent = self.frame.Parent
     
     local header = Instance.new("TextLabel")
-    header.Size = UDim2.new(1, 0, 0, 25)
+    header.Size = UDim2.new(1, 0, 0, 0)
+    header.AutomaticSize = Enum.AutomaticSize.Y -- Авто-высота текста
     header.Text = name
     header.TextColor3 = Color3.fromRGB(255, 255, 255)
     header.BackgroundTransparency = 1
     header.Font = THEME_FONT
     header.TextXAlignment = Enum.TextXAlignment.Left
     header.TextSize = 14
+    header.TextWrapped = true -- ИСПРАВЛЕНИЕ: перенос текста
     header.Parent = sec
+    
+    -- Добавим немного отступа снизу для хедера
+    local pad = Instance.new("UIPadding")
+    pad.PaddingBottom = UDim.new(0, 5)
+    pad.Parent = header
     
     local elemContainer = Instance.new("Frame")
     elemContainer.Size = UDim2.new(1, 0, 0, 0)
-    elemContainer.Position = UDim2.new(0, 0, 0, 25)
+    elemContainer.Position = UDim2.new(0, 0, 0, 25) -- Начинаем чуть ниже
     elemContainer.AutomaticSize = Enum.AutomaticSize.Y
     elemContainer.BackgroundTransparency = 1
     elemContainer.Parent = sec
@@ -319,10 +333,8 @@ function page:createSection(name)
     }, section)
 end
 
--- Вспомогательная функция для создания подложки (чтобы не дублировать)
 function section:createContainerElement()
     local frame = Instance.new("Frame")
-    -- АВТО-ШИРИНА: 100% - 4px (для красоты краев)
     frame.Size = UDim2.new(1, -4, 0, 36)
     frame.BackgroundColor3 = Color3.fromRGB(140, 200, 170)
     frame.Parent = self.container
@@ -351,8 +363,6 @@ function section:createButton(info)
         if info.Callback then
             pcall(info.Callback)
         end
-        
-        -- Эффект клика
         utils:tween(btnFrame, {BackgroundColor3 = Color3.fromRGB(120, 180, 240)}, 0.1)
         wait(0.1)
         utils:tween(btnFrame, {BackgroundColor3 = Color3.fromRGB(100, 160, 220)}, 0.2)
@@ -363,6 +373,60 @@ function section:createButton(info)
         setText = function(self, txt)
             btn.Text = txt
         end
+    }
+end
+
+-- НОВАЯ ФУНКЦИЯ: TEXTBOX
+function section:createTextbox(info)
+    local boxFrame = self:createContainerElement()
+    boxFrame.BackgroundColor3 = Color3.fromRGB(130, 190, 160) -- Чуть темнее для поля ввода
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(0.4, 0, 1, 0)
+    title.Position = UDim2.new(0, 10, 0, 0)
+    title.Text = info.Name or "Textbox"
+    title.TextColor3 = Color3.new(1,1,1)
+    title.BackgroundTransparency = 1
+    title.Font = THEME_FONT
+    title.TextSize = 14
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = boxFrame
+
+    local inputFrame = Instance.new("Frame")
+    inputFrame.Size = UDim2.new(0.5, 0, 0.7, 0)
+    inputFrame.AnchorPoint = Vector2.new(1, 0.5)
+    inputFrame.Position = UDim2.new(1, -10, 0.5, 0)
+    inputFrame.BackgroundColor3 = Color3.fromRGB(100, 160, 130)
+    inputFrame.Parent = boxFrame
+
+    local inputCorner = Instance.new("UICorner")
+    inputCorner.CornerRadius = UDim.new(0, 5)
+    inputCorner.Parent = inputFrame
+
+    local input = Instance.new("TextBox")
+    input.Size = UDim2.new(1, -10, 1, 0)
+    input.Position = UDim2.new(0, 5, 0, 0)
+    input.BackgroundTransparency = 1
+    input.Text = ""
+    input.PlaceholderText = info.Placeholder or "Type here..."
+    input.PlaceholderColor3 = Color3.fromRGB(200, 200, 200)
+    input.TextColor3 = Color3.new(1,1,1)
+    input.Font = THEME_FONT
+    input.TextSize = 13
+    input.TextXAlignment = Enum.TextXAlignment.Left
+    input.Parent = inputFrame
+
+    local callback = info.Callback or function() end
+
+    -- Срабатывает когда нажали Enter или кликнули вне поля
+    input.FocusLost:Connect(function(enterPressed)
+        callback(input.Text)
+    end)
+
+    return {
+        input = input,
+        get = function() return input.Text end,
+        set = function(self, txt) input.Text = txt end
     }
 end
 
@@ -383,12 +447,12 @@ function section:createToggle(info)
     local toggleFrame = Instance.new("Frame")
     toggleFrame.Size = UDim2.new(0, 40, 0, 20)
     toggleFrame.AnchorPoint = Vector2.new(1, 0.5)
-    toggleFrame.Position = UDim2.new(1, -10, 0.5, 0) -- Привязка к правому краю
+    toggleFrame.Position = UDim2.new(1, -10, 0.5, 0)
     toggleFrame.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     toggleFrame.Parent = tog
     
     local toggleCorner = Instance.new("UICorner")
-    toggleCorner.CornerRadius = UDim.new(1, 0) -- Полный круг
+    toggleCorner.CornerRadius = UDim.new(1, 0)
     toggleCorner.Parent = toggleFrame
     
     local toggleCircle = Instance.new("Frame")
@@ -421,7 +485,6 @@ function section:createToggle(info)
         update()
     end)
     
-    -- Инициализация без анимации
     if state then
         toggleCircle.Position = UDim2.new(1, -18, 0.5, -8)
         toggleFrame.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
@@ -443,7 +506,7 @@ function section:createSlider(info)
     local default = info.Default or min
     
     local slide = self:createContainerElement()
-    slide.Size = UDim2.new(1, -4, 0, 45) -- Чуть выше для слайдера
+    slide.Size = UDim2.new(1, -4, 0, 45)
     
     local txt = Instance.new("TextLabel")
     txt.Size = UDim2.new(1, 0, 0, 20)
@@ -489,9 +552,9 @@ function section:createSlider(info)
     
     local handle = Instance.new("Frame")
     handle.Size = UDim2.new(0, 12, 0, 12)
-    handle.AnchorPoint = Vector2.new(0.5, 0.5) -- Центрируем хэндл
+    handle.AnchorPoint = Vector2.new(0.5, 0.5)
     handle.BackgroundColor3 = Color3.new(1,1,1)
-    handle.Parent = track -- Хэндл внутри трека для удобства
+    handle.Parent = track
     
     local handleCorner = Instance.new("UICorner")
     handleCorner.CornerRadius = UDim.new(1, 0)
@@ -503,8 +566,6 @@ function section:createSlider(info)
     local function update(inputPos)
         local barSize = track.AbsoluteSize.X
         local barPos = track.AbsolutePosition.X
-        
-        -- Защита от деления на ноль, если UI скрыт
         if barSize == 0 then return end
         
         local percent = utils:clamp((inputPos - barPos) / barSize, 0, 1)
@@ -517,7 +578,7 @@ function section:createSlider(info)
         callback(value)
     end
     
-    local btn = utils:createBtn(slide) -- Кнопка поверх всего слайдера для захвата
+    local btn = utils:createBtn(slide)
     
     btn.MouseButton1Down:Connect(function()
         dragging = true
@@ -537,16 +598,13 @@ function section:createSlider(info)
         end
     end)
     
-    -- Инициализация
     local startPercent = (default - min) / (max - min)
     fill.Size = UDim2.new(startPercent, 0, 1, 0)
     handle.Position = UDim2.new(startPercent, 0, 0.5, 0)
     
     return {
         slide = slide,
-        get = function()
-            return tonumber(valueTxt.Text)
-        end,
+        get = function() return tonumber(valueTxt.Text) end,
         set = function(self, val)
             val = utils:clamp(val, min, max)
             local percent = (val - min) / (max - min)
@@ -560,7 +618,7 @@ end
 function section:createLabel(text)
     local frame = self:createContainerElement()
     frame.Size = UDim2.new(1, -4, 0, 30)
-    frame.BackgroundTransparency = 1 -- Прозрачный фон для лейбла
+    frame.BackgroundTransparency = 1
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, 0, 1, 0)
@@ -574,9 +632,7 @@ function section:createLabel(text)
     
     return {
         label = label,
-        set = function(self, txt)
-            label.Text = txt
-        end
+        set = function(self, txt) label.Text = txt end
     }
 end
 
