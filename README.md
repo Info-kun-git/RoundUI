@@ -22,6 +22,6 @@ local ui = rui.new({
     Color = Color3.fromRGB(102, 204, 153) 
 })
 ```
-> Note: The UI size is calculated automatically based on your screen resolution. Tested on phone, idk about PC =
+> Note: The UI size is calculated automatically based on your screen resolution. Tested on phone, idk about PC =)
 
 
