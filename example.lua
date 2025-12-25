@@ -1,12 +1,8 @@
--- RoundUI Example
--- URL of lib (lol): https://github.com/Info-kun-git/RoundUI/blob/main/source.lua?raw=true
-
-local rui = loadstring(game:HttpGet("https://github.com/Info-kun-git/RoundUI/blob/main/source.lua?raw=true"))()
+local rui = loadstring(game:HttpGet("https://raw.githubusercontent.com/Info-kun-git/RoundUI/main/source.lua"))()
 
 local ui = rui.new({
     Name = "RoundUI Example",
-    Color = Color3.fromRGB(102, 204, 153),
-    Size = UDim2.new(0, 300, 0, 350)
+    Color = Color3.fromRGB(102, 204, 153)
 })
 
 local mainPage = ui:createPage("Main Controls")
@@ -26,11 +22,7 @@ local toggle = controlsSec:createToggle({
     Default = false,
     Callback = function(state)
         toggleState = state
-        if state then
-            print("Toggle enabled!")
-        else
-            print("Toggle disabled!")
-        end
+        print("Toggle state:", state)
     end
 })
 
@@ -43,6 +35,16 @@ local slider = controlsSec:createSlider({
     Callback = function(value)
         sliderValue = value
         print("Slider value:", value)
+    end
+})
+
+local userText = ""
+local textbox = controlsSec:createTextbox({
+    Name = "Enter Name",
+    Placeholder = "Username...",
+    Callback = function(text)
+        userText = text
+        print("User typed:", text)
     end
 })
 
@@ -61,24 +63,4 @@ local updateBtn = statusSec:createButton({
     end
 })
 
-local toggleSec = mainPage:createSection("More Toggles")
-
-local toggle2 = toggleSec:createToggle({
-    Name = "Option A",
-    Default = true,
-    Callback = function(state)
-        print("Option A:", state)
-    end
-})
-
-local toggle3 = toggleSec:createToggle({
-    Name = "Option B",
-    Default = false,
-    Callback = function(state)
-        print("Option B:", state)
-    end
-})
-
 print("RoundUI Example loaded successfully!")
-print("UI is draggable - click and drag the top bar")
-print("Use +/- button to minimize/expand")
