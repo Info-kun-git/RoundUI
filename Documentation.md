@@ -1,4 +1,5 @@
 # RoundUI Documentation
+> AUTOMATICALLY CREATED BY COPILOT
 
 RoundUI is a lightweight, easy-to-use Lua UI library inspired by popular Roblox UI libraries (for example, Rayfield). It provides a small set of rounded, themed UI components you can drop into your project and customize.
 
