@@ -1,4 +1,4 @@
-local rui = loadstring(game:HttpGet("https://raw.githubusercontent.com/Info-kun-git/RoundUI/main/source.lua"))()
+local rui = loadstring(game:HttpGet("https://raw.githubusercontent.com/Info-kun-git/RoundUI/main/source.lua?raw=true"))()
 
 local ui = rui.new({
     Name = "RoundUI Example",
