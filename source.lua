@@ -1,12 +1,12 @@
--- RoundUI Library v1.0 by info-kun-git
+-- RoundUI Library v1.1 by info-kun-git
 
 local rs = game:GetService("RunService")
 local ts = game:GetService("TweenService")
 local uis = game:GetService("UserInputService")
 local core = game:GetService("CoreGui")
-local players = game:GetService("Players")
+local plrs = game:GetService("Players")
 
-local lp = players.LocalPlayer
+local lp = plrs.LocalPlayer
 local mouse = lp:GetMouse()
 
 local rui = {}
@@ -47,20 +47,29 @@ do
         local dragging = false
         local offset
         
-        handle.MouseButton1Down:Connect(function()
-            dragging = true
-            offset = Vector2.new(mouse.X, mouse.Y) - frame.AbsolutePosition
-        end)
+        local function startDrag(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+               input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                offset = input.Position - frame.AbsolutePosition
+            end
+        end
         
-        mouse.Button1Up:Connect(function()
-            dragging = false
-        end)
+        local function endDrag(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+               input.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+            end
+        end
+        
+        handle.InputBegan:Connect(startDrag)
+        uis.InputEnded:Connect(endDrag)
         
         rs.RenderStepped:Connect(function()
             if dragging and offset then
                 frame.Position = UDim2.fromOffset(
-                    mouse.X - offset.X + (frame.AbsoluteSize.X * frame.AnchorPoint.X),
-                    mouse.Y - offset.Y + (frame.AbsoluteSize.Y * frame.AnchorPoint.Y)
+                    mouse.X - offset.X,
+                    mouse.Y - offset.Y
                 )
             end
         end)
@@ -84,7 +93,7 @@ end
 
 function rui.new(info)
     local name = info.Name or "RoundUI"
-    local color = info.Color or Color3.fromRGB(204, 0, 0)
+    local color = info.Color or Color3.fromRGB(102, 204, 153) -- soft green
     local size = info.Size or UDim2.new(0, 300, 0, 200)
     
     local scr = Instance.new("ScreenGui")
@@ -100,57 +109,68 @@ function rui.new(info)
     main.Parent = scr
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 20)
+    corner.CornerRadius = UDim.new(0, 15)
     corner.Parent = main
     
     local top = Instance.new("Frame")
     top.Size = UDim2.new(1, 0, 0, 40)
     top.Position = UDim2.new(0, 0, 0, 0)
-    top.BackgroundColor3 = Color3.fromRGB(255, 51, 51)
+    top.BackgroundColor3 = Color3.fromRGB(76, 153, 115) -- darker green
     top.BorderSizePixel = 0
     top.Parent = main
     
     local topCorner = Instance.new("UICorner")
-    topCorner.CornerRadius = UDim.new(0, 20)
+    topCorner.CornerRadius = UDim.new(0, 15)
     topCorner.Parent = top
     
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(0.6, 0, 1, 0)
     title.Position = UDim2.new(0.05, 0, 0, 0)
     title.Text = name
-    title.TextColor3 = Color3.fromRGB(153, 0, 0)
+    title.TextColor3 = Color3.new(1,1,1)
     title.BackgroundTransparency = 1
-    title.Font = Enum.Font.Fondamento
-    title.TextSize = 22
+    title.Font = Enum.Font.Gotham
+    title.TextSize = 18
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = top
     
+    local btnContainer = Instance.new("Frame")
+    btnContainer.Size = UDim2.new(0, 70, 1, 0)
+    btnContainer.Position = UDim2.new(1, -75, 0, 0)
+    btnContainer.BackgroundTransparency = 1
+    btnContainer.Parent = top
+    
+    local layout = Instance.new("UIListLayout")
+    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.Padding = UDim.new(0, 5)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    layout.VerticalAlignment = Enum.VerticalAlignment.Center
+    layout.Parent = btnContainer
+    
     local minBtn = Instance.new("TextButton")
     minBtn.Size = UDim2.new(0, 30, 0, 30)
-    minBtn.Position = UDim2.new(0.9, 0, 0.5, -15)
     minBtn.Text = "-"
-    minBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
+    minBtn.BackgroundColor3 = Color3.fromRGB(120, 180, 150)
     minBtn.TextColor3 = Color3.new(1,1,1)
-    minBtn.Font = Enum.Font.Fondamento
+    minBtn.Font = Enum.Font.GothamBold
     minBtn.TextSize = 18
-    minBtn.Parent = top
+    minBtn.Parent = btnContainer
     
     local minCorner = Instance.new("UICorner")
-    minCorner.CornerRadius = UDim.new(0, 15)
+    minCorner.CornerRadius = UDim.new(0, 8)
     minCorner.Parent = minBtn
     
     local closeBtn = Instance.new("TextButton")
     closeBtn.Size = UDim2.new(0, 30, 0, 30)
-    closeBtn.Position = UDim2.new(0.95, 0, 0.5, -15)
     closeBtn.Text = "×"
-    closeBtn.BackgroundColor3 = Color3.fromRGB(255, 153, 153)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(240, 120, 120)
     closeBtn.TextColor3 = Color3.new(1,1,1)
-    closeBtn.Font = Enum.Font.Fondamento
+    closeBtn.Font = Enum.Font.GothamBold
     closeBtn.TextSize = 20
-    closeBtn.Parent = top
+    closeBtn.Parent = btnContainer
     
     local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 15)
+    closeCorner.CornerRadius = UDim.new(0, 8)
     closeCorner.Parent = closeBtn
     
     local content = Instance.new("Frame")
@@ -163,11 +183,12 @@ function rui.new(info)
     scroll.Size = UDim2.new(1, 0, 1, 0)
     scroll.BackgroundTransparency = 1
     scroll.ScrollBarThickness = 5
+    scroll.ScrollBarImageColor3 = Color3.fromRGB(150, 150, 150)
     scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     scroll.Parent = content
     
     local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0, 10)
+    layout.Padding = UDim.new(0, 8)
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     layout.Parent = scroll
     
@@ -177,12 +198,12 @@ function rui.new(info)
     local originalSize = main.Size
     local originalPos = main.Position
     
-    utils:createBtn(minBtn).MouseButton1Click:Connect(function()
+    minBtn.MouseButton1Click:Connect(function()
         minimized = not minimized
         if minimized then
             minBtn.Text = "+"
-            utils:tween(main, {Size = UDim2.new(0, 220, 0, 40)}, 0.3)
-            utils:tween(main, {Position = UDim2.new(0.5, -110, 0.5, -20)}, 0.3)
+            utils:tween(main, {Size = UDim2.new(0, 200, 0, 40)}, 0.3)
+            utils:tween(main, {Position = UDim2.new(0.5, -100, 0.5, -20)}, 0.3)
             content.Visible = false
         else
             minBtn.Text = "-"
@@ -192,7 +213,7 @@ function rui.new(info)
         end
     end)
     
-    utils:createBtn(closeBtn).MouseButton1Click:Connect(function()
+    closeBtn.MouseButton1Click:Connect(function()
         scr:Destroy()
     end)
     
@@ -207,12 +228,12 @@ end
 
 function rui:createPage(name)
     local pg = Instance.new("Frame")
-    pg.Size = UDim2.new(1, 0, 0, 35)
-    pg.BackgroundColor3 = Color3.fromRGB(255, 153, 153)
+    pg.Size = UDim2.new(0.9, 0, 0, 35)
+    pg.BackgroundColor3 = Color3.fromRGB(120, 180, 150)
     pg.Parent = self.content
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = pg
     
     local txt = Instance.new("TextLabel")
@@ -221,8 +242,8 @@ function rui:createPage(name)
     txt.Text = name
     txt.TextColor3 = Color3.new(1,1,1)
     txt.BackgroundTransparency = 1
-    txt.Font = Enum.Font.Fondamento
-    txt.TextSize = 18
+    txt.Font = Enum.Font.Gotham
+    txt.TextSize = 16
     txt.Parent = pg
     
     return setmetatable({
@@ -233,12 +254,12 @@ end
 
 function page:createSection(name)
     local sec = Instance.new("Frame")
-    sec.Size = UDim2.new(0.9, 0, 0, 35)
-    sec.BackgroundColor3 = Color3.fromRGB(255, 51, 51)
+    sec.Size = UDim2.new(0.85, 0, 0, 40)
+    sec.BackgroundColor3 = Color3.fromRGB(140, 200, 170)
     sec.Parent = self.frame
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
+    corner.CornerRadius = UDim.new(0, 6)
     corner.Parent = sec
     
     local txt = Instance.new("TextLabel")
@@ -247,12 +268,24 @@ function page:createSection(name)
     txt.Text = name
     txt.TextColor3 = Color3.new(1,1,1)
     txt.BackgroundTransparency = 1
-    txt.Font = Enum.Font.Fondamento
-    txt.TextSize = 16
+    txt.Font = Enum.Font.Gotham
+    txt.TextSize = 14
     txt.Parent = sec
+    
+    local elemContainer = Instance.new("Frame")
+    elemContainer.Size = UDim2.new(1, 0, 1, 45)
+    elemContainer.Position = UDim2.new(0, 0, 0, 45)
+    elemContainer.BackgroundTransparency = 1
+    elemContainer.Parent = sec
+    
+    local elemLayout = Instance.new("UIListLayout")
+    elemLayout.Padding = UDim.new(0, 8)
+    elemLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    elemLayout.Parent = elemContainer
     
     return setmetatable({
         frame = sec,
+        container = elemContainer,
         name = name
     }, section)
 end
@@ -260,21 +293,18 @@ end
 function section:createButton(info)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0.8, 0, 0, 35)
-    btn.Position = UDim2.new(0.1, 0, 0, 45)
     btn.Text = info.Name or "Button"
-    btn.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
+    btn.BackgroundColor3 = Color3.fromRGB(100, 160, 220)
     btn.TextColor3 = Color3.new(1,1,1)
-    btn.Font = Enum.Font.Fondamento
-    btn.TextSize = 16
-    btn.Parent = self.frame
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 14
+    btn.Parent = self.container
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = btn
     
-    local btnClick = utils:createBtn(btn)
-    
-    btnClick.MouseButton1Click:Connect(function()
+    btn.MouseButton1Click:Connect(function()
         if info.Callback then
             pcall(info.Callback)
         end
@@ -291,12 +321,11 @@ end
 function section:createToggle(info)
     local tog = Instance.new("Frame")
     tog.Size = UDim2.new(0.8, 0, 0, 35)
-    tog.Position = UDim2.new(0.1, 0, 0, 45)
-    tog.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
-    tog.Parent = self.frame
+    tog.BackgroundColor3 = Color3.fromRGB(140, 200, 170)
+    tog.Parent = self.container
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = tog
     
     local txt = Instance.new("TextLabel")
@@ -305,29 +334,41 @@ function section:createToggle(info)
     txt.Text = info.Name or "Toggle"
     txt.TextColor3 = Color3.new(1,1,1)
     txt.BackgroundTransparency = 1
-    txt.Font = Enum.Font.Fondamento
-    txt.TextSize = 16
+    txt.Font = Enum.Font.Gotham
+    txt.TextSize = 14
     txt.TextXAlignment = Enum.TextXAlignment.Left
     txt.Parent = tog
     
-    local indicator = Instance.new("Frame")
-    indicator.Size = UDim2.new(0, 20, 0, 20)
-    indicator.Position = UDim2.new(0.8, -10, 0.5, -10)
-    indicator.BackgroundColor3 = Color3.fromRGB(255, 153, 153)
-    indicator.Parent = tog
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Size = UDim2.new(0, 40, 0, 20)
+    toggleFrame.Position = UDim2.new(0.85, -20, 0.5, -10)
+    toggleFrame.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    toggleFrame.Parent = tog
     
-    local indCorner = Instance.new("UICorner")
-    indCorner.CornerRadius = UDim.new(0, 10)
-    indCorner.Parent = indicator
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 10)
+    toggleCorner.Parent = toggleFrame
+    
+    local toggleCircle = Instance.new("Frame")
+    toggleCircle.Size = UDim2.new(0, 16, 0, 16)
+    toggleCircle.Position = UDim2.new(0, 2, 0.5, -8)
+    toggleCircle.BackgroundColor3 = Color3.new(1,1,1)
+    toggleCircle.Parent = toggleFrame
+    
+    local circleCorner = Instance.new("UICorner")
+    circleCorner.CornerRadius = UDim.new(0, 8)
+    circleCorner.Parent = toggleCircle
     
     local state = info.Default or false
     local callback = info.Callback or function() end
     
     local function update()
         if state then
-            indicator.BackgroundColor3 = Color3.fromRGB(50, 205, 50)
+            toggleCircle.Position = UDim2.new(1, -18, 0.5, -8)
+            toggleFrame.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
         else
-            indicator.BackgroundColor3 = Color3.fromRGB(255, 153, 153)
+            toggleCircle.Position = UDim2.new(0, 2, 0.5, -8)
+            toggleFrame.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
         end
         callback(state)
     end
@@ -357,12 +398,11 @@ function section:createSlider(info)
     
     local slide = Instance.new("Frame")
     slide.Size = UDim2.new(0.8, 0, 0, 50)
-    slide.Position = UDim2.new(0.1, 0, 0, 45)
-    slide.BackgroundColor3 = Color3.fromRGB(255, 51, 51)
-    slide.Parent = self.frame
+    slide.BackgroundColor3 = Color3.fromRGB(140, 200, 170)
+    slide.Parent = self.container
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = slide
     
     local txt = Instance.new("TextLabel")
@@ -371,15 +411,15 @@ function section:createSlider(info)
     txt.Text = info.Name or "Slider"
     txt.TextColor3 = Color3.new(1,1,1)
     txt.BackgroundTransparency = 1
-    txt.Font = Enum.Font.Fondamento
-    txt.TextSize = 14
+    txt.Font = Enum.Font.Gotham
+    txt.TextSize = 12
     txt.TextXAlignment = Enum.TextXAlignment.Left
     txt.Parent = slide
     
     local track = Instance.new("Frame")
     track.Size = UDim2.new(0.8, 0, 0, 6)
-    track.Position = UDim2.new(0.1, 0, 0.7, -3)
-    track.BackgroundColor3 = Color3.fromRGB(255, 153, 153)
+    track.Position = UDim2.new(0.1, 0, 0.6, -3)
+    track.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     track.Parent = slide
     
     local trackCorner = Instance.new("UICorner")
@@ -388,7 +428,7 @@ function section:createSlider(info)
     
     local fill = Instance.new("Frame")
     fill.Size = UDim2.new(0, 0, 1, 0)
-    fill.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
+    fill.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
     fill.Parent = track
     
     local fillCorner = Instance.new("UICorner")
@@ -397,7 +437,7 @@ function section:createSlider(info)
     
     local handle = Instance.new("Frame")
     handle.Size = UDim2.new(0, 12, 0, 12)
-    handle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    handle.BackgroundColor3 = Color3.new(1,1,1)
     handle.Parent = slide
     
     local handleCorner = Instance.new("UICorner")
@@ -406,12 +446,12 @@ function section:createSlider(info)
     
     local valueTxt = Instance.new("TextLabel")
     valueTxt.Size = UDim2.new(0.8, 0, 0, 20)
-    valueTxt.Position = UDim2.new(0.1, 0, 0.4, 0)
+    valueTxt.Position = UDim2.new(0.1, 0, 0.35, 0)
     valueTxt.Text = tostring(default)
     valueTxt.TextColor3 = Color3.new(1,1,1)
     valueTxt.BackgroundTransparency = 1
-    valueTxt.Font = Enum.Font.Fondamento
-    valueTxt.TextSize = 14
+    valueTxt.Font = Enum.Font.Gotham
+    valueTxt.TextSize = 12
     valueTxt.TextXAlignment = Enum.TextXAlignment.Left
     valueTxt.Parent = slide
     
@@ -423,7 +463,7 @@ function section:createSlider(info)
         local value = utils:round(min + (max - min) * percent, 2)
         
         fill.Size = UDim2.new(percent, 0, 1, 0)
-        handle.Position = UDim2.new(percent, -6, 0.7, -6)
+        handle.Position = UDim2.new(0.1 + percent * 0.8, -6, 0.6, -6)
         valueTxt.Text = tostring(value)
         
         callback(value)
@@ -434,11 +474,13 @@ function section:createSlider(info)
         update(mouse.X)
     end)
     
-    mouse.Button1Up:Connect(function()
-        dragging = false
+    uis.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
     end)
     
-    mouse.Move:Connect(function()
+    rs.RenderStepped:Connect(function()
         if dragging then
             update(mouse.X)
         end
@@ -461,14 +503,13 @@ end
 function section:createLabel(text)
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.8, 0, 0, 30)
-    label.Position = UDim2.new(0.1, 0, 0, 45)
     label.Text = text
     label.TextColor3 = Color3.new(1,1,1)
     label.BackgroundTransparency = 1
-    label.Font = Enum.Font.Fondamento
-    label.TextSize = 16
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 14
     label.TextWrapped = true
-    label.Parent = self.frame
+    label.Parent = self.container
     
     return {
         label = label,
@@ -477,14 +518,5 @@ function section:createLabel(text)
         end
     }
 end
-
--- пример использования:
--- local ui = rui.new({Name = "Test UI", Color = Color3.fromRGB(204, 0, 0)})
--- local pg = ui:createPage("Main")
--- local sec = pg:createSection("Controls")
--- sec:createButton({Name = "Click Me", Callback = function() print("Clicked!") end})
--- sec:createToggle({Name = "Enable", Default = false, Callback = function(state) print("Toggle:", state) end})
--- sec:createSlider({Name = "Volume", Min = 0, Max = 100, Default = 50, Callback = function(val) print("Value:", val) end})
--- sec:createLabel("Welcome to RoundUI!")
 
 return rui
