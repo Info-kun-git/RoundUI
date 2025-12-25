@@ -29,9 +29,9 @@ mixedSec:createTextbox({
     Callback = function(t) print("Typed: " .. t) end
 })
 mixedSec:createToggle({
-    Name = "Safe Mode",
+    Name = "Enabled b",
     Default = true,
-    Callback = function(s) print("Safe: " .. tostring(s)) end
+    Callback = function(s) print("Status: " .. tostring(s)) end
 })
 
 print("RoundUI Loaded. Check sections with ʌ/v buttons!")
