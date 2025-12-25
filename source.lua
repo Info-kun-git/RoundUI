@@ -1,4 +1,4 @@
--- RoundUI Library v1.1 by info-kun-git
+-- RoundUI Library v1.2 by info-kun-git
 
 local rs = game:GetService("RunService")
 local ts = game:GetService("TweenService")
@@ -45,32 +45,45 @@ do
     function utils:initDrag(frame, handle)
         handle = handle or frame
         local dragging = false
-        local offset
+        local dragInput
+        local dragStart
+        local startPos
         
-        local function startDrag(input)
+        local function update(input)
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale, 
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale, 
+                startPos.Y.Offset + delta.Y
+            )
+        end
+        
+        handle.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or 
                input.UserInputType == Enum.UserInputType.Touch then
                 dragging = true
-                offset = input.Position - frame.AbsolutePosition
+                dragStart = input.Position
+                startPos = frame.Position
+                
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                    end
+                end)
             end
-        end
+        end)
         
-        local function endDrag(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+        handle.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement or 
                input.UserInputType == Enum.UserInputType.Touch then
-                dragging = false
+                dragInput = input
             end
-        end
+        end)
         
-        handle.InputBegan:Connect(startDrag)
-        uis.InputEnded:Connect(endDrag)
-        
-        rs.RenderStepped:Connect(function()
-            if dragging and offset then
-                frame.Position = UDim2.fromOffset(
-                    mouse.X - offset.X,
-                    mouse.Y - offset.Y
-                )
+        uis.InputChanged:Connect(function(input)
+            if input == dragInput and dragging then
+                update(input)
             end
         end)
     end
@@ -95,6 +108,7 @@ function rui.new(info)
     local name = info.Name or "RoundUI"
     local color = info.Color or Color3.fromRGB(102, 204, 153) -- soft green
     local size = info.Size or UDim2.new(0, 300, 0, 200)
+    local uiWidth = size.X.Offset
     
     local scr = Instance.new("ScreenGui")
     scr.Name = name
@@ -129,7 +143,7 @@ function rui.new(info)
     title.Text = name
     title.TextColor3 = Color3.new(1,1,1)
     title.BackgroundTransparency = 1
-    title.Font = Enum.Font.Gotham
+    title.Font = Enum.Font.fromName("Montserrat Alternates Bold")
     title.TextSize = 18
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = top
@@ -152,7 +166,7 @@ function rui.new(info)
     minBtn.Text = "-"
     minBtn.BackgroundColor3 = Color3.fromRGB(120, 180, 150)
     minBtn.TextColor3 = Color3.new(1,1,1)
-    minBtn.Font = Enum.Font.GothamBold
+    minBtn.Font = Enum.Font.fromName("Montserrat Alternates Bold")
     minBtn.TextSize = 18
     minBtn.Parent = btnContainer
     
@@ -165,7 +179,7 @@ function rui.new(info)
     closeBtn.Text = "×"
     closeBtn.BackgroundColor3 = Color3.fromRGB(240, 120, 120)
     closeBtn.TextColor3 = Color3.new(1,1,1)
-    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.Font = Enum.Font.fromName("Montserrat Alternates Bold")
     closeBtn.TextSize = 20
     closeBtn.Parent = btnContainer
     
@@ -192,7 +206,45 @@ function rui.new(info)
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     layout.Parent = scroll
     
-    utils:initDrag(main, top)
+    -- Автоматический расчет ширины для элементов
+    local elementWidth = uiWidth * 0.85 -- 85% от ширины UI
+    
+    -- Исправленная функция drag (работающая версия)
+    local dragging = false
+    local dragStart
+    local startPos
+    
+    top.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = main.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    top.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            local dragInput = input
+        end
+    end)
+    
+    uis.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            main.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
     
     local minimized = false
     local originalSize = main.Size
@@ -222,7 +274,9 @@ function rui.new(info)
         main = main,
         content = scroll,
         color = color,
-        name = name
+        name = name,
+        uiWidth = uiWidth,
+        elementWidth = elementWidth
     }, rui)
 end
 
@@ -242,19 +296,22 @@ function rui:createPage(name)
     txt.Text = name
     txt.TextColor3 = Color3.new(1,1,1)
     txt.BackgroundTransparency = 1
-    txt.Font = Enum.Font.Gotham
+    txt.Font = Enum.Font.fromName("Montserrat Alternates Bold")
     txt.TextSize = 16
     txt.Parent = pg
     
     return setmetatable({
         frame = pg,
-        name = name
+        name = name,
+        parent = self
     }, page)
 end
 
 function page:createSection(name)
+    local elementWidth = self.parent.elementWidth
+    
     local sec = Instance.new("Frame")
-    sec.Size = UDim2.new(0.85, 0, 0, 40)
+    sec.Size = UDim2.new(0, elementWidth, 0, 40)
     sec.BackgroundColor3 = Color3.fromRGB(140, 200, 170)
     sec.Parent = self.frame
     
@@ -268,7 +325,7 @@ function page:createSection(name)
     txt.Text = name
     txt.TextColor3 = Color3.new(1,1,1)
     txt.BackgroundTransparency = 1
-    txt.Font = Enum.Font.Gotham
+    txt.Font = Enum.Font.fromName("Montserrat Alternates Bold")
     txt.TextSize = 14
     txt.Parent = sec
     
@@ -286,17 +343,19 @@ function page:createSection(name)
     return setmetatable({
         frame = sec,
         container = elemContainer,
-        name = name
+        name = name,
+        elementWidth = elementWidth,
+        parent = self
     }, section)
 end
 
 function section:createButton(info)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.8, 0, 0, 35)
+    btn.Size = UDim2.new(0, self.elementWidth * 0.9, 0, 35)
     btn.Text = info.Name or "Button"
     btn.BackgroundColor3 = Color3.fromRGB(100, 160, 220)
     btn.TextColor3 = Color3.new(1,1,1)
-    btn.Font = Enum.Font.Gotham
+    btn.Font = Enum.Font.fromName("Montserrat Alternates Bold")
     btn.TextSize = 14
     btn.Parent = self.container
     
@@ -320,7 +379,7 @@ end
 
 function section:createToggle(info)
     local tog = Instance.new("Frame")
-    tog.Size = UDim2.new(0.8, 0, 0, 35)
+    tog.Size = UDim2.new(0, self.elementWidth * 0.9, 0, 35)
     tog.BackgroundColor3 = Color3.fromRGB(140, 200, 170)
     tog.Parent = self.container
     
@@ -334,7 +393,7 @@ function section:createToggle(info)
     txt.Text = info.Name or "Toggle"
     txt.TextColor3 = Color3.new(1,1,1)
     txt.BackgroundTransparency = 1
-    txt.Font = Enum.Font.Gotham
+    txt.Font = Enum.Font.fromName("Montserrat Alternates Bold")
     txt.TextSize = 14
     txt.TextXAlignment = Enum.TextXAlignment.Left
     txt.Parent = tog
@@ -397,7 +456,7 @@ function section:createSlider(info)
     local default = info.Default or min
     
     local slide = Instance.new("Frame")
-    slide.Size = UDim2.new(0.8, 0, 0, 50)
+    slide.Size = UDim2.new(0, self.elementWidth * 0.9, 0, 50)
     slide.BackgroundColor3 = Color3.fromRGB(140, 200, 170)
     slide.Parent = self.container
     
@@ -411,7 +470,7 @@ function section:createSlider(info)
     txt.Text = info.Name or "Slider"
     txt.TextColor3 = Color3.new(1,1,1)
     txt.BackgroundTransparency = 1
-    txt.Font = Enum.Font.Gotham
+    txt.Font = Enum.Font.fromName("Montserrat Alternates Bold")
     txt.TextSize = 12
     txt.TextXAlignment = Enum.TextXAlignment.Left
     txt.Parent = slide
@@ -450,7 +509,7 @@ function section:createSlider(info)
     valueTxt.Text = tostring(default)
     valueTxt.TextColor3 = Color3.new(1,1,1)
     valueTxt.BackgroundTransparency = 1
-    valueTxt.Font = Enum.Font.Gotham
+    valueTxt.Font = Enum.Font.fromName("Montserrat Alternates Bold")
     valueTxt.TextSize = 12
     valueTxt.TextXAlignment = Enum.TextXAlignment.Left
     valueTxt.Parent = slide
@@ -502,11 +561,11 @@ end
 
 function section:createLabel(text)
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.8, 0, 0, 30)
+    label.Size = UDim2.new(0, self.elementWidth * 0.9, 0, 30)
     label.Text = text
     label.TextColor3 = Color3.new(1,1,1)
     label.BackgroundTransparency = 1
-    label.Font = Enum.Font.Gotham
+    label.Font = Enum.Font.fromName("Montserrat Alternates Bold")
     label.TextSize = 14
     label.TextWrapped = true
     label.Parent = self.container
