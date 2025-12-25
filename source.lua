@@ -1,12 +1,9 @@
--- RoundUI Library v1.3
--- Auto-scale, Safe Appear (Hidden), Textbox added
-
 local rs = game:GetService("RunService")
 local ts = game:GetService("TweenService")
 local uis = game:GetService("UserInputService")
 local core = game:GetService("CoreGui")
 local plrs = game:GetService("Players")
-local http = game:GetService("HttpService") -- Для генерации случайных имен
+local http = game:GetService("HttpService")
 
 local lp = plrs.LocalPlayer
 local mouse = lp:GetMouse()
@@ -22,19 +19,14 @@ page.__index = page
 section.__index = section
 elem.__index = elem
 
--- Настройки темы
-local THEME_FONT = Enum.Font.GothamBold 
+local THEME_FONT = Enum.Font.GothamBold
 local PADDING_SIZE = 6
 
 local utils = {}
 
 do
-    -- Функция для защиты GUI (Safe Appear)
     function utils:secureParent(gui)
-        -- 1. Генерируем случайное имя, чтобы игра не нашла GUI по названию
         gui.Name = http:GenerateGUID(false)
-        
-        -- 2. Пытаемся использовать защищенную папку (gethui), если её нет - CoreGui
         if (getgenv and getgenv().gethui) then
             gui.Parent = getgenv().gethui()
         elseif (syn and syn.protect_gui) then 
@@ -114,25 +106,25 @@ do
     function utils:clamp(v, min, max)
         return math.max(min, math.min(max, v))
     end
+
+    function utils:round(num, places)
+        local mult = 10^(places or 0)
+        return math.floor(num * mult + 0.5) / mult
+    end
 end
 
 function rui.new(info)
     local name = info.Name or "RoundUI"
     local color = info.Color or Color3.fromRGB(102, 204, 153)
     
-    -- АВТОМАТИЧЕСКИЙ РАСЧЕТ РАЗМЕРА (Optimal Size)
-    -- Берем размер экрана
     local viewport = camera.ViewportSize
-    -- Ширина: 35% от экрана, но не меньше 350px и не больше 600px
     local optimalWidth = math.clamp(viewport.X * 0.35, 350, 600)
-    -- Высота: 40% от экрана, но не меньше 250px и не больше 500px
     local optimalHeight = math.clamp(viewport.Y * 0.4, 250, 500)
     
     local size = UDim2.new(0, optimalWidth, 0, optimalHeight)
     
     local scr = Instance.new("ScreenGui")
     scr.ResetOnSpawn = false
-    -- ПРИМЕНЯЕМ ЗАЩИТУ (SAFE APPEAR)
     utils:secureParent(scr)
     
     local main = Instance.new("Frame")
@@ -298,24 +290,23 @@ function page:createSection(name)
     
     local header = Instance.new("TextLabel")
     header.Size = UDim2.new(1, 0, 0, 0)
-    header.AutomaticSize = Enum.AutomaticSize.Y -- Авто-высота текста
+    header.AutomaticSize = Enum.AutomaticSize.Y
     header.Text = name
     header.TextColor3 = Color3.fromRGB(255, 255, 255)
     header.BackgroundTransparency = 1
     header.Font = THEME_FONT
     header.TextXAlignment = Enum.TextXAlignment.Left
     header.TextSize = 14
-    header.TextWrapped = true -- ИСПРАВЛЕНИЕ: перенос текста
+    header.TextWrapped = true
     header.Parent = sec
     
-    -- Добавим немного отступа снизу для хедера
     local pad = Instance.new("UIPadding")
     pad.PaddingBottom = UDim.new(0, 5)
     pad.Parent = header
     
     local elemContainer = Instance.new("Frame")
     elemContainer.Size = UDim2.new(1, 0, 0, 0)
-    elemContainer.Position = UDim2.new(0, 0, 0, 25) -- Начинаем чуть ниже
+    elemContainer.Position = UDim2.new(0, 0, 0, 25)
     elemContainer.AutomaticSize = Enum.AutomaticSize.Y
     elemContainer.BackgroundTransparency = 1
     elemContainer.Parent = sec
@@ -376,10 +367,9 @@ function section:createButton(info)
     }
 end
 
--- НОВАЯ ФУНКЦИЯ: TEXTBOX
 function section:createTextbox(info)
     local boxFrame = self:createContainerElement()
-    boxFrame.BackgroundColor3 = Color3.fromRGB(130, 190, 160) -- Чуть темнее для поля ввода
+    boxFrame.BackgroundColor3 = Color3.fromRGB(130, 190, 160)
     
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(0.4, 0, 1, 0)
@@ -418,7 +408,6 @@ function section:createTextbox(info)
 
     local callback = info.Callback or function() end
 
-    -- Срабатывает когда нажали Enter или кликнули вне поля
     input.FocusLost:Connect(function(enterPressed)
         callback(input.Text)
     end)
@@ -578,15 +567,16 @@ function section:createSlider(info)
         callback(value)
     end
     
-    local btn = utils:createBtn(slide)
-    
-    btn.MouseButton1Down:Connect(function()
-        dragging = true
-        update(mouse.X)
+    slide.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+           input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            update(input.Position.X)
+        end
     end)
     
     uis.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or 
            input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
